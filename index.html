@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RoostWatch Ireland — Lesser Horseshoe Bat Monitoring</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --green:#1f4e3d; --green2:#2e7d5b; --leaf:#4caf7d; --gold:#c9a24b;
+    --bg:#f4f6f3; --card:#ffffff; --ink:#23302b; --muted:#6b7a72; --line:#e2e8e3;
+    --up:#2e9e6b; --down:#c0563f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5}
+  header{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;padding:22px 30px;
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.15);
+    display:flex;align-items:center;justify-content:center;font-size:26px}
+  .brand h1{font-size:20px;font-weight:700;letter-spacing:.2px}
+  .brand p{font-size:12.5px;opacity:.85}
+  .hbadge{font-size:11.5px;background:rgba(255,255,255,.16);padding:6px 11px;border-radius:20px}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 22px 60px}
+  .demo-note{background:#fff8e6;border:1px solid #f0dca0;color:#7a6320;font-size:12.5px;
+    padding:9px 14px;border-radius:8px;margin-bottom:20px}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
+  select{padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;
+    font-size:13px;color:var(--ink);cursor:pointer}
+  label{font-size:12px;color:var(--muted);font-weight:600}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 16px}
+  .kpi .v{font-size:27px;font-weight:800;color:var(--green)}
+  .kpi .l{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+  .kpi .d{font-size:12px;margin-top:6px;font-weight:700}
+  .up{color:var(--up)} .down{color:var(--down)}
+  .grid{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;margin-bottom:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .card h3{font-size:14px;color:var(--green);margin-bottom:4px}
+  .card .sub{font-size:11.5px;color:var(--muted);margin-bottom:14px}
+  .chartbox{position:relative;height:280px}
+  .chartbox.sm{height:240px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.3px;color:var(--muted)}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700}
+  .pill.ok{background:#e3f4ea;color:#1f7a4d}
+  .pill.due{background:#fdece7;color:#b8472b}
+  .pill.soon{background:#fdf4e0;color:#9a7b25}
+  .trendcell{font-weight:700}
+  footer{text-align:center;font-size:11.5px;color:var(--muted);margin-top:26px}
+  @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">🦇</div>
+    <div>
+      <h1>RoostWatch Ireland</h1>
+      <p>Lesser Horseshoe Bat (<em>Rhinolophus hipposideros</em>) Monitoring &middot; Programme Manager Dashboard</p>
+    </div>
+  </div>
+  <div class="hbadge">Conservation Standards aligned &middot; 2025 field season</div>
+</header>
+
+<div class="wrap">
+  <div class="demo-note">
+    <strong>Concept demonstration.</strong> Built by Saurav M for the VWT Ireland Mammal Programme Manager application.
+    Roost names and figures below are <strong>illustrative sample data</strong> to show how the tool would work — not live VWT records.
+  </div>
+
+  <div class="controls">
+    <label for="county">County</label>
+    <select id="county">
+      <option value="all">All reserves</option>
+      <option>Clare</option><option>Galway</option><option>Mayo</option>
+      <option>Cork</option><option>Kerry</option><option>Limerick</option>
+    </select>
+    <label for="metric">Trend metric</label>
+    <select id="metric">
+      <option value="emergence">Emergence count (summer)</option>
+      <option value="hibernation">Hibernation count (winter)</option>
+    </select>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="v" id="k-total">—</div><div class="l">Bats counted (2025)</div><div class="d up" id="k-total-d"></div></div>
+    <div class="kpi"><div class="v" id="k-roosts">—</div><div class="l">Roosts monitored</div><div class="d" id="k-roosts-d"></div></div>
+    <div class="kpi"><div class="v" id="k-trend">—</div><div class="l">10-yr population trend</div><div class="d up" id="k-trend-d"></div></div>
+    <div class="kpi"><div class="v" id="k-vol">38</div><div class="l">Active volunteers</div><div class="d up">+6 vs last yr</div></div>
+    <div class="kpi"><div class="v" id="k-due">3</div><div class="l">Roosts overdue survey</div><div class="d down">needs scheduling</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Population trend — trust-wide</h3>
+      <div class="sub" id="trend-sub">Total counted across monitored reserves, 2015–2025</div>
+      <div class="chartbox"><canvas id="trendChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>2025 count by county</h3>
+      <div class="sub">Where Ireland's monitored population sits</div>
+      <div class="chartbox sm"><canvas id="countyChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Reserve health panel</h3>
+      <div class="sub">Last survey, year-on-year change, and monitoring status</div>
+      <table id="reserveTable">
+        <thead><tr><th>Reserve roost</th><th>County</th><th>Last survey</th><th class="num">2025</th><th class="num">YoY</th><th>Status</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Threats &amp; incidents logged (2025)</h3>
+      <div class="sub">From the field app — for adaptive management</div>
+      <div class="chartbox sm"><canvas id="threatChart"></canvas></div>
+    </div>
+  </div>
+
+  <footer>RoostWatch concept &middot; Phase 1 buildable now with Microsoft 365 / free tools &middot; Saurav M, 2026</footer>
+</div>
+
+<script>
+// ---- Illustrative sample data (NOT live VWT data) ----
+const years = [2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025];
+const reserves = [
+  {roost:"Old Mill Roost",     county:"Clare",   last:"12 Jul 2025", emergence:[210,222,235,240,251,248,260,272,281,290,305], status:"ok"},
+  {roost:"Abbey Cellar",       county:"Clare",   last:"09 Jul 2025", emergence:[150,158,160,171,169,175,182,190,196,205,214], status:"ok"},
+  {roost:"Glen Stable Loft",   county:"Galway",  last:"28 Jun 2025", emergence:[98,104,101,110,118,121,127,130,141,149,156], status:"ok"},
+  {roost:"Coastal Boathouse",  county:"Galway",  last:"02 May 2025", emergence:[64,69,72,70,78,80,85,88,91,96,99], status:"due"},
+  {roost:"Walled Garden Barn", county:"Mayo",    last:"15 Jul 2025", emergence:[120,118,126,133,139,142,148,150,159,166,172], status:"ok"},
+  {roost:"Demesne Icehouse",   county:"Cork",    last:"03 Jun 2025", emergence:[176,182,180,191,198,205,210,219,224,233,240], status:"soon"},
+  {roost:"Riverside Mill",     county:"Kerry",   last:"21 Apr 2025", emergence:[88,90,95,99,102,100,108,112,118,121,128], status:"due"},
+  {roost:"Old Forge Roost",    county:"Limerick",last:"10 Jul 2025", emergence:[133,140,144,150,148,156,161,168,173,180,189], status:"ok"},
+];
+// hibernation ~ 0.45 of emergence with slight noise
+reserves.forEach(r=>{ r.hibernation = r.emergence.map((v,i)=>Math.round(v*0.45 + (i%3))); });
+const threats = {labels:["Roost disturbance","Vehicle casualty","Habitat works","Lighting impact","Predation sign"], data:[7,4,3,5,2]};
+const palette = ["#1f4e3d","#2e7d5b","#4caf7d","#7cc6a0","#c9a24b","#a9763a","#6b8f7a","#3a6b57"];
+
+let trendChart, countyChart, threatChart;
+const $ = id => document.getElementById(id);
+
+function activeReserves(){
+  const c = $("county").value;
+  return c==="all" ? reserves : reserves.filter(r=>r.county===c);
+}
+function sumByYear(list, metric){
+  return years.map((_,i)=> list.reduce((s,r)=> s + r[metric][i], 0));
+}
+function render(){
+  const metric = $("metric").value;
+  const list = activeReserves();
+  const totals = sumByYear(list, metric);
+  const t2025 = totals[totals.length-1], t2024 = totals[totals.length-2], t2015 = totals[0];
+  const yoy = (((t2025-t2024)/t2024)*100).toFixed(1);
+  const tenyr = (((t2025-t2015)/t2015)*100).toFixed(0);
+
+  $("k-total").textContent = t2025.toLocaleString();
+  $("k-total-d").textContent = "+"+yoy+"% vs 2024";
+  $("k-roosts").textContent = list.length;
+  $("k-roosts-d").textContent = "across "+new Set(list.map(r=>r.county)).size+" counties";
+  $("k-trend").textContent = "+"+tenyr+"%";
+  $("k-trend-d").textContent = "since 2015";
+  $("k-due").textContent = list.filter(r=>r.status==="due").length;
+
+  $("trend-sub").textContent = (metric==="emergence"?"Summer emergence":"Winter hibernation")+
+    " count across "+($("county").value==="all"?"all monitored reserves":$("county").value)+", 2015–2025";
+
+  // Trend line
+  const tData = {labels:years, datasets:[{label:"Bats counted", data:totals, fill:true,
+    borderColor:"#1f4e3d", backgroundColor:"rgba(76,175,125,.18)", tension:.32,
+    pointRadius:3, pointBackgroundColor:"#1f4e3d", borderWidth:2.5}]};
+  if(trendChart){trendChart.data=tData;trendChart.update();}
+  else trendChart=new Chart($("trendChart"),{type:"line",data:tData,options:lineOpts()});
+
+  // County bar (2025)
+  const counties=[...new Set(reserves.map(r=>r.county))];
+  const cVals=counties.map(c=>reserves.filter(r=>r.county===c).reduce((s,r)=>s+r[metric][10],0));
+  const cData={labels:counties,datasets:[{data:cVals,backgroundColor:palette,borderRadius:6}]};
+  if(countyChart){countyChart.data=cData;countyChart.update();}
+  else countyChart=new Chart($("countyChart"),{type:"bar",data:cData,options:barOpts()});
+
+  // Table
+  const tb=$("reserveTable").querySelector("tbody"); tb.innerHTML="";
+  list.forEach(r=>{
+    const yo=(((r[metric][10]-r[metric][9])/r[metric][9])*100).toFixed(1);
+    const cls=yo>=0?"up":"down", sym=yo>=0?"▲":"▼";
+    const pill=r.status==="ok"?'<span class="pill ok">On schedule</span>':
+      r.status==="due"?'<span class="pill due">Overdue</span>':'<span class="pill soon">Due soon</span>';
+    tb.insertAdjacentHTML("beforeend",
+      `<tr><td>${r.roost}</td><td>${r.county}</td><td>${r.last}</td>
+       <td class="num">${r[metric][10]}</td>
+       <td class="num trendcell ${cls}">${sym} ${Math.abs(yo)}%</td><td>${pill}</td></tr>`);
+  });
+}
+function lineOpts(){return{responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{display:false}},
+  scales:{y:{beginAtZero:false,grid:{color:"#eef2ef"}},x:{grid:{display:false}}}};}
+function barOpts(){return{responsive:true,maintainAspectRatio:false,indexAxis:"y",
+  plugins:{legend:{display:false}},
+  scales:{x:{grid:{color:"#eef2ef"}},y:{grid:{display:false}}}};}
+
+$("county").addEventListener("change",render);
+$("metric").addEventListener("change",render);
+
+threatChart=new Chart($("threatChart"),{type:"doughnut",
+  data:{labels:threats.labels,datasets:[{data:threats.data,backgroundColor:palette,borderWidth:2,borderColor:"#fff"}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:"58%",
+    plugins:{legend:{position:"right",labels:{font:{size:11},boxWidth:12}}}}});
+
+render();
+</script>
+</body>
+</html>
