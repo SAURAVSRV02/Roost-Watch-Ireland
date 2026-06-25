@@ -2,7 +2,7 @@
 
 **A lesser horseshoe bat (*Rhinolophus hipposideros*) monitoring dashboard & field-app concept.**
 
-Built by **Saurav M** to accompany an application for the *Ireland Mammal Programme Manager* role at the Vincent Wildlife Trust.
+Built by **Saurav M** 
 
 🔗 **Live dashboard:** https://sauravsrv02.github.io/roostwatch-ireland/
 
